@@ -1,180 +1,151 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showDropdown, setShowDropdown] = useState(false);
   const supabase = createSupabaseClient();
-  const router = useRouter();
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error('Error getting user:', error);
-        }
-        console.log('Initial user check:', user?.email);
-        setUser(user);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        setLoading(false);
-      }
-    };
+    checkUser();
+  }, []);
 
-    getUser();
-
-    // Listen for auth changes with better logging
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
       
-      if (event === 'SIGNED_IN') {
-        console.log('User signed in:', session?.user?.email);
-        setUser(session?.user);
-        setLoading(false);
-        // Force a re-render
-        router.refresh();
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
-        setUser(null);
-        setLoading(false);
-        router.refresh();
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed:', session?.user?.email);
-        setUser(session?.user);
-        setLoading(false);
+      // Check if user is admin
+      if (user && user.email === '24cs058@charusat.edu.in') {
+        setIsAdmin(true);
       }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase.auth, router]);
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error checking user:', error);
+      setLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      setShowDropdown(false);
       setUser(null);
-      router.push('/');
+      setIsAdmin(false);
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showDropdown && !(event.target as Element).closest('.profile-dropdown')) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showDropdown]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Navbar state updated:', { user: user?.email, loading });
-  }, [user, loading]);
+  if (loading) {
+    return (
+      <nav className="bg-gray-900 border-b border-red-500/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="animate-pulse bg-gray-700 h-8 w-32 rounded"></div>
+            <div className="animate-pulse bg-gray-700 h-8 w-24 rounded"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
-    <nav className="bg-gradient-to-br from-gray-900 to-black border-b border-red-500/20 shadow-lg">
+    <nav className="bg-gray-900 border-b border-red-500/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link href="/" className="text-white text-xl font-bold hover:text-red-400 transition-colors">
-              GlobalTrotters
-            </Link>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {loading ? (
-              // Show loading state
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gray-800 animate-pulse"></div>
-                <span className="text-gray-400 text-sm">Loading...</span>
-              </div>
-            ) : user ? (
-              // User is signed in - show profile photo
-              <div className="relative profile-dropdown">
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center space-x-2 text-white hover:text-red-400 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden flex items-center justify-center">
-                    {user.user_metadata?.avatar_url ? (
-                      <Image
-                        src={user.user_metadata.avatar_url}
-                        alt="Profile"
-                        width={32}
-                        height={32}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = "https://via.placeholder.com/32x32/red/white?text=U";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-red-600 flex items-center justify-center text-white text-sm font-bold">
-                        {user.email?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-sm font-medium hidden sm:block">{user.email}</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <Image src="/GlobeTrotter.png" alt="GlobeTrotter" width={40} height={40} />
+            <span className="text-xl font-bold text-white">GlobeTrotter</span>
+          </Link>
 
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">
+              Dashboard
+            </Link>
+            <Link href="/itinerary" className="text-gray-300 hover:text-white transition-colors">
+              My Trips
+            </Link>
+            <Link href="/calendar" className="text-gray-300 hover:text-white transition-colors">
+              Calendar
+            </Link>
+            <Link href="/community" className="text-gray-300 hover:text-white transition-colors">
+              Community
+            </Link>
+            {isAdmin && (
+              <Link href="/admin" className="text-red-400 hover:text-red-300 transition-colors font-medium">
+                🛠️ Admin Dashboard
+              </Link>
+            )}
+          </div>
+
+          {/* User Menu */}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <div className="relative group">
+                <button className="flex items-center space-x-2 text-white hover:text-red-300 transition-colors">
+                  <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden md:block">{user.email?.split('@')[0]}</span>
+                  {isAdmin && (
+                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                      ADMIN
+                    </span>
+                  )}
+                  <span>▼</span>
+                </button>
+                
                 {/* Dropdown Menu */}
-                {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-red-500/20 rounded-md shadow-lg py-1 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-red-500/20 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-2">
+                    <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
+                      Signed in as {user.email}
+                    </div>
                     <Link
                       href="/profile"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
-                      onClick={() => setShowDropdown(false)}
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                     >
-                      Profile
+                      👤 Profile
                     </Link>
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/itinerary"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      My Itineraries
-                    </Link>
-                    <hr className="my-1 border-gray-700" />
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors"
+                      >
+                        🛠️ Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                     >
-                      Sign out
+                      🚪 Sign Out
                     </button>
                   </div>
-                )}
+                </div>
               </div>
             ) : (
-              // User is not signed in - show Login/Signup
-              <>
-                <Link href="/login" className="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Login
+              <div className="flex items-center space-x-4">
+                <Link
+                  href="/login"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Sign In
                 </Link>
-                <Link href="/signup" className="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                  Sign up
+                <Link
+                  href="/signup"
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Sign Up
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>

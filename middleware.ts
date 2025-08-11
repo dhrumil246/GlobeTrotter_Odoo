@@ -38,12 +38,11 @@ export async function middleware(req: NextRequest) {
   // Protect admin routes
   if (req.nextUrl.pathname.startsWith('/admin')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', req.url));
+      return NextResponse.redirect(new URL('/auth/login', req.url));
     }
 
-    // Check if user has admin role
-    const userRole = user.user_metadata?.role;
-    if (userRole !== 'admin') {
+    // Check if user is admin (simple email check)
+    if (user.email !== '24cs058@charusat.edu.in') {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
   }
