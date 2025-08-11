@@ -44,11 +44,12 @@ export default function Navbar() {
   }, [showDropdown]);
 
   return (
-    <nav className="bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg">
+    <nav className="bg-gradient-to-r from-black to-gray-900 border-b border-red-500/30 shadow-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-white text-xl font-bold hover:text-green-100 transition-colors">
+            <Link href="/" className="text-white text-xl font-bold hover:text-red-300 transition-colors flex items-center">
+              <span className="mr-2">🌍</span>
               GlobalTrotters
             </Link>
           </div>
@@ -59,7 +60,7 @@ export default function Navbar() {
               <div className="relative profile-dropdown">
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center space-x-2 text-white hover:text-green-100 transition-colors"
+                  className="flex items-center space-x-2 text-white hover:text-red-300 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-white overflow-hidden flex items-center justify-center">
                     {user.user_metadata?.avatar_url ? (
@@ -70,11 +71,11 @@ export default function Navbar() {
                         height={32}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = "https://via.placeholder.com/32x32/green/white?text=U";
+                          e.currentTarget.src = "https://via.placeholder.com/32x32/red/white?text=U";
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full bg-green-500 flex items-center justify-center text-white text-sm font-bold">
+                      <div className="w-full h-full bg-red-500 flex items-center justify-center text-white text-sm font-bold">
                         {user.email?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     )}
@@ -87,32 +88,32 @@ export default function Navbar() {
 
                 {/* Dropdown Menu */}
                 {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-red-500/20 rounded-md shadow-lg py-1 z-50">
                     <Link
                       href="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-white hover:bg-red-600"
                       onClick={() => setShowDropdown(false)}
                     >
                       Profile
                     </Link>
                     <Link
                       href="/dashboard"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-white hover:bg-red-600"
                       onClick={() => setShowDropdown(false)}
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/itinerary"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-white hover:bg-red-600"
                       onClick={() => setShowDropdown(false)}
                     >
                       My Itineraries
                     </Link>
-                    <hr className="my-1" />
+                    <hr className="my-1 border-gray-700" />
                     <button
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-red-600"
                     >
                       Sign out
                     </button>
@@ -122,10 +123,10 @@ export default function Navbar() {
             ) : (
               // User is not signed in - show Login/Signup
               <>
-                <Link href="/login" className="text-white hover:text-green-100 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                <Link href="/login" className="text-white hover:text-red-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   Login
                 </Link>
-                <Link href="/signup" className="bg-white text-green-600 hover:bg-green-50 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                <Link href="/signup" className="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
                   Sign up
                 </Link>
               </>

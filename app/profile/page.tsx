@@ -105,10 +105,10 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading profile...</p>
         </div>
       </div>
     );
@@ -116,10 +116,10 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Please log in to view your profile</h1>
-          <Link href="/login" className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+          <h1 className="text-2xl font-bold text-white mb-4">Please log in to view your profile</h1>
+          <Link href="/login" className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
             Go to Login
           </Link>
         </div>
@@ -128,14 +128,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+        <div className="bg-gray-900 border border-red-500/20 rounded-2xl shadow-xl p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
             {/* Profile Image */}
             <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 overflow-hidden flex items-center justify-center">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-red-500 to-red-600 overflow-hidden flex items-center justify-center">
                 {profile?.avatar_url ? (
                   <Image
                     src={profile.avatar_url}
@@ -145,11 +145,12 @@ export default function ProfilePage() {
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling!.style.display = 'flex';
+                      const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (nextSibling) nextSibling.style.display = 'flex';
                     }}
                   />
                 ) : null}
-                <div className="w-full h-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-4xl font-bold">
+                <div className="w-full h-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-4xl font-bold">
                   {profile?.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                 </div>
               </div>
@@ -157,10 +158,10 @@ export default function ProfilePage() {
 
             {/* User Details */}
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              <h1 className="text-3xl font-bold text-white mb-2">
                 {profile?.full_name || 'Traveler'}
               </h1>
-              <p className="text-lg text-gray-600 mb-4">{profile?.email}</p>
+              <p className="text-lg text-gray-300 mb-4">{profile?.email}</p>
               <p className="text-sm text-gray-500">
                 Member since {new Date(profile?.created_at || user.created_at).toLocaleDateString()}
               </p>

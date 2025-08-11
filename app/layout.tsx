@@ -27,9 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-black to-gray-900 text-white`}
       >
-        <header className="border-b">
+        <header className="border-b border-red-500/20 bg-black/50 backdrop-blur-sm">
           <Navbar />
         </header>
         {children}

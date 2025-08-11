@@ -84,25 +84,25 @@ export default function TripsBrowser({ itineraries }: Props) {
   return (
     <div className="space-y-6">
       {/* Controls row */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:space-x-4">
+      <div className="bg-gradient-to-r from-gray-800 to-gray-900 border border-red-500/30 rounded-lg shadow-lg p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:space-x-4">
           <input
             type="text"
             placeholder="Search trips..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full md:flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black placeholder-gray-500 bg-white"
+            className="w-full md:flex-1 px-4 py-3 border border-gray-600 bg-gray-900 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-400"
           />
 
           {/* Group by */}
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Group by</label>
+            <label className="text-sm font-medium text-gray-300">Group by</label>
             <select
               value={groupBy}
               onChange={(e) =>
                 setGroupBy(e.target.value as "none" | "status" | "month")
               }
-              className="px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-3 py-2 bg-black border border-red-500/30 text-white rounded-lg hover:bg-gray-900 transition-colors focus:ring-2 focus:ring-red-500"
             >
               <option value="none">None</option>
               <option value="status">Status (Active/Past)</option>
@@ -112,14 +112,14 @@ export default function TripsBrowser({ itineraries }: Props) {
 
           {/* Filter */}
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Filter</label>
+            <label className="text-sm font-medium text-gray-300">Filter</label>
             <button
               type="button"
               onClick={() => setActiveOnly((v) => !v)}
-              className={`px-3 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeOnly
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-black hover:bg-gray-200"
+                  ? "bg-red-600 text-white shadow-md"
+                  : "bg-black border border-red-500/30 text-gray-300 hover:bg-gray-900"
               }`}
               aria-pressed={activeOnly}
             >
@@ -129,7 +129,7 @@ export default function TripsBrowser({ itineraries }: Props) {
 
           {/* Sort by */}
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Sort by</label>
+            <label className="text-sm font-medium text-gray-300">Sort by</label>
             <select
               value={sortBy}
               onChange={(e) =>
@@ -141,7 +141,7 @@ export default function TripsBrowser({ itineraries }: Props) {
                     | "title_desc"
                 )
               }
-              className="px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-3 py-2 bg-black border border-red-500/30 text-white rounded-lg hover:bg-gray-900 transition-colors focus:ring-2 focus:ring-red-500"
             >
               <option value="start_asc">Start date (asc)</option>
               <option value="start_desc">Start date (desc)</option>
@@ -157,39 +157,52 @@ export default function TripsBrowser({ itineraries }: Props) {
         {sections.map(([heading, trips]) => (
           <div key={heading}>
             {heading !== "All" && (
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              <h3 className="text-xl font-semibold text-white mb-4 border-l-4 border-red-500 pl-3">
                 {heading}
               </h3>
             )}
             {trips.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {trips.map((trip) => (
                   <Link
                     key={trip.id}
                     href={`/itinerary/${trip.id}`}
-                    className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-gradient-to-br from-gray-800 to-gray-900 border border-red-500/30 rounded-lg shadow-lg p-6 hover:shadow-xl hover:border-red-500/50 hover:from-gray-700 hover:to-gray-800 transition-all duration-200 cursor-pointer transform hover:-translate-y-1"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-800">
+                      <h4 className="font-semibold text-white text-lg">
                         {trip.title}
                       </h4>
-                      <span className="text-blue-600">→</span>
+                      <span className="text-red-500 text-xl">→</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {dayjs(trip.start_date).format("MMM DD")} -{" "}
-                      {dayjs(trip.end_date).format("MMM DD, YYYY")}
-                    </p>
+                    <div className="flex items-center mb-3">
+                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                      <p className="text-sm text-gray-300">
+                        {dayjs(trip.start_date).format("MMM DD")} -{" "}
+                        {dayjs(trip.end_date).format("MMM DD, YYYY")}
+                      </p>
+                    </div>
                     {trip.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2">
+                      <p className="text-sm text-gray-400 line-clamp-2 border-t border-gray-700 pt-3">
                         {trip.description}
                       </p>
                     )}
+                    <div className="flex items-center mt-4">
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                        isActive(trip) 
+                          ? 'bg-red-600 text-white' 
+                          : 'bg-gray-700 text-gray-300'
+                      }`}>
+                        {isActive(trip) ? 'Active' : 'Completed'}
+                      </span>
+                    </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="text-center text-gray-500 bg-white rounded-lg border border-dashed p-6">
-                No trips found.
+              <div className="text-center text-gray-400 bg-gradient-to-r from-gray-800 to-gray-900 border border-red-500/20 border-dashed rounded-lg p-8">
+                <div className="text-4xl mb-2">📝</div>
+                <p>No trips found.</p>
               </div>
             )}
           </div>

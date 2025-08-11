@@ -125,8 +125,8 @@ export default function MovingDestinationCards() {
                 onClick={() => setCurrentIndex(index)}
                 className={`w-4 h-4 rounded-full transition-all duration-500 ${
                   index === currentIndex
-                    ? 'bg-white scale-125'
-                    : 'bg-white/50 hover:bg-white/75'
+                    ? 'bg-red-500 scale-125'
+                    : 'bg-red-500/50 hover:bg-red-500/75'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
@@ -136,7 +136,7 @@ export default function MovingDestinationCards() {
           {/* Navigation Arrows */}
           <button
             onClick={() => setCurrentIndex((prev) => (prev - 1 + (destinations.length - 3)) % (destinations.length - 3))}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-500 hover:scale-110 z-20"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-red-600/80 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-500 hover:scale-110 z-20"
             aria-label="Previous slide"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +146,7 @@ export default function MovingDestinationCards() {
           
           <button
             onClick={() => setCurrentIndex((prev) => (prev + 1) % (destinations.length - 3))}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-500 hover:scale-110 z-20"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-red-600/80 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-500 hover:scale-110 z-20"
             aria-label="Next slide"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

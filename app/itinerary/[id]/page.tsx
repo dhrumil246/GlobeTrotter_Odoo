@@ -31,13 +31,13 @@ export default async function ItineraryDetailPage({ params }: { params: { id: st
     .eq("itinerary_id", itinerary.id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-black">
       <div className="max-w-4xl mx-auto p-6">
         {/* Back Button */}
         <div className="mb-6">
           <Link 
             href="/itinerary" 
-            className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="inline-flex items-center space-x-2 text-red-400 hover:text-red-300 font-medium transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

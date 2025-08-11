@@ -89,7 +89,7 @@ type AddActivityFormProps = {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 Activity Name
               </label>
               <input
@@ -98,11 +98,11 @@ type AddActivityFormProps = {
                   value={activityName}
                   onChange={e => setActivityName(e.target.value)}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-700 bg-gray-800 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-400"
                 />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 Cost (₹)
               </label>
               <input
@@ -111,7 +111,7 @@ type AddActivityFormProps = {
                 value={cost}
                 onChange={e => setCost(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                className="w-full px-4 py-2 border border-gray-700 bg-gray-800 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-gray-400"
 />
             </div>
           </div>
@@ -120,7 +120,7 @@ type AddActivityFormProps = {
             <button 
               type="submit" 
               disabled={loading} 
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              className="bg-red-600 hover:bg-red-700 disabled:bg-gray-500 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2"
             >
               {loading ? (
                 <>
@@ -138,14 +138,14 @@ type AddActivityFormProps = {
             <button 
               type="button"
               onClick={() => onCancel && onCancel()}
-              className="text-gray-500 hover:text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+              className="text-gray-400 hover:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
             >
               Cancel
             </button>
           </div>
           
           {error && (
-            <div className="text-red-600 bg-red-50 border border-red-200 px-4 py-2 rounded-lg">
+            <div className="text-red-300 bg-red-900/50 border border-red-500/50 px-4 py-2 rounded-lg">
               {error}
             </div>
           )}
@@ -153,7 +153,7 @@ type AddActivityFormProps = {
         
         {/* Success Notification */}
         {success && (
-          <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2 animate-fade-in">
+          <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2 animate-fade-in">
             <span className="text-xl">✅</span>
             <span>{success}</span>
             <button 

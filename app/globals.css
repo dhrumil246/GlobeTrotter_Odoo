@@ -1,21 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #dc2626; /* red-600 */
+  --primary-dark: #991b1b; /* red-800 */
+  --primary-light: #f87171; /* red-400 */
+  --secondary: #1f1f1f; /* gray-800 */
+  --accent: #374151; /* gray-700 */
+  --surface: #111111; /* gray-900 but darker */
+  --border: rgba(220, 38, 38, 0.3); /* red with opacity */
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
   }
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  font-smooth: always;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced text rendering */
+h1, h2, h3, h4, h5, h6 {
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1;
+  -webkit-font-smoothing: antialiased;
 }
 
 @keyframes fadeIn {
@@ -40,10 +57,25 @@ body {
   }
 }
 
+@keyframes pulse-red {
+  0%, 100% {
+    opacity: 1;
+    background-color: #dc2626;
+  }
+  50% {
+    opacity: 0.5;
+    background-color: #f87171;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
 
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse-red {
+  animation: pulse-red 2s ease-in-out infinite;
 }

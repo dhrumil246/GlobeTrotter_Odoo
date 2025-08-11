@@ -91,33 +91,33 @@ export default function AddActivitySection({
   return (
     <div className="space-y-6">
       {/* Total Trip Cost Display */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Trip Overview</h2>
-            <p className="text-gray-600">Total expenses across all days</p>
+            <h2 className="text-xl font-semibold text-white">Trip Overview</h2>
+            <p className="text-gray-400">Total expenses across all days</p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-500">Total Trip Cost</div>
-            <div className="text-3xl font-bold text-blue-600">₹{totalTripCost.toLocaleString()}</div>
+            <div className="text-sm text-gray-400">Total Trip Cost</div>
+            <div className="text-3xl font-bold text-red-500">₹{totalTripCost.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
       {/* Day Selector */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Select Day</h2>
+          <h2 className="text-xl font-semibold text-white">Select Day</h2>
           <div className="text-right">
-            <div className="text-sm text-gray-500">Day Cost</div>
-            <div className="text-lg font-bold text-blue-600">₹{totalDayCost.toLocaleString()}</div>
+            <div className="text-sm text-gray-400">Day Cost</div>
+            <div className="text-lg font-bold text-red-400">₹{totalDayCost.toLocaleString()}</div>
           </div>
         </div>
         
         <select
           value={selectedDay}
           onChange={(e) => setSelectedDay(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+          className="w-full px-4 py-3 border border-gray-700 bg-gray-800 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white"
         >
           {days.map((day: string) => (
             <option key={day} value={day}>
@@ -128,15 +128,15 @@ export default function AddActivitySection({
       </div>
 
       {/* Selected Day Content */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg overflow-hidden">
         {/* Day Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white">
                 {dayjs(selectedDay).format("dddd, MMMM DD")}
               </h2>
-              <p className="text-blue-100 text-sm">
+              <p className="text-red-100 text-sm">
                 {dayjs(selectedDay).format("YYYY-MM-DD")}
               </p>
             </div>
@@ -158,23 +158,23 @@ export default function AddActivitySection({
                     key={activity.id} 
                     className={`flex items-center justify-between p-3 rounded-lg transition-all duration-500 ${
                       isNewlyAdded 
-                        ? 'bg-green-50 border-2 border-green-200 animate-slide-in shadow-md' 
-                        : 'bg-gray-50'
+                        ? 'bg-red-900/30 border-2 border-red-500/50 animate-slide-in shadow-md' 
+                        : 'bg-gray-800'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`w-2 h-2 rounded-full ${
-                        isNewlyAdded ? 'bg-green-600 animate-pulse' : 'bg-green-500'
+                        isNewlyAdded ? 'bg-red-400 animate-pulse' : 'bg-red-500'
                       }`}></div>
-                      <span className="font-medium text-gray-800">{activity.activity_name}</span>
+                      <span className="font-medium text-white">{activity.activity_name}</span>
                       {isNewlyAdded && (
-                        <span className="text-xs text-green-700 bg-green-200 px-2 py-1 rounded-full font-medium animate-bounce">
+                        <span className="text-xs text-red-200 bg-red-800/50 px-2 py-1 rounded-full font-medium animate-bounce">
                           ✨ Just added!
                         </span>
                       )}
                     </div>
                     <span className={`font-semibold ${
-                      isNewlyAdded ? 'text-green-700' : 'text-gray-700'
+                      isNewlyAdded ? 'text-red-300' : 'text-gray-300'
                     }`}>₹{Number(activity.cost).toLocaleString()}</span>
                   </div>
                 );
@@ -190,7 +190,7 @@ export default function AddActivitySection({
           {/* Add Activity Button */}
           <button
             onClick={() => handleShowForm(selectedDay)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
           >
             <span>+</span>
             <span>Add Activity</span>
@@ -198,7 +198,7 @@ export default function AddActivitySection({
 
           {/* Activity Form */}
           {showFormForDay === selectedDay && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
               <AddActivityForm
                 itineraryId={itinerary.id}
                 date={selectedDay}
@@ -211,8 +211,8 @@ export default function AddActivitySection({
       </div>
 
       {/* Quick Navigation */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
+      <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Quick Navigation</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {days.map((day: string) => {
             const dayActivities = localActivitiesByDay[day] || [];
@@ -223,8 +223,8 @@ export default function AddActivitySection({
                 onClick={() => setSelectedDay(day)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedDay === day
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700"
                 }`}
               >
                 <div>{dayjs(day).format("MMM DD")}</div>

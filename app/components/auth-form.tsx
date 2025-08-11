@@ -35,28 +35,28 @@ function LoginForm() {
       <div className="space-y-2">
         <input 
           type="email" 
-          className="w-full rounded-xl bg-black-100 border-0 px-6 py-4 text-lg placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:bg-black transition-all" 
+          className="w-full rounded-xl bg-gray-800 border border-gray-700 px-6 py-4 text-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:bg-gray-900 transition-all" 
           placeholder="Email" 
           {...form.register("email")} 
         />
-        <p className="text-xs text-red-600">{form.formState.errors.email?.message}</p>
+        <p className="text-xs text-red-400">{form.formState.errors.email?.message}</p>
       </div>
       <div className="space-y-2">
         <input 
           type="password" 
-          className="w-full rounded-xl bg-black-100 border-0 px-6 py-4 text-lg placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:bg-black transition-all" 
+          className="w-full rounded-xl bg-gray-800 border border-gray-700 px-6 py-4 text-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:bg-gray-900 transition-all" 
           placeholder="Password" 
           {...form.register("password")} 
         />
-        <p className="text-xs text-red-600">{form.formState.errors.password?.message}</p>
+        <p className="text-xs text-red-400">{form.formState.errors.password?.message}</p>
       </div>
-      {state?.success === false && <div className="text-sm text-red-600">{state.message}</div>}
+      {state?.success === false && <div className="text-sm text-red-400">{state.message}</div>}
       
       <div className="pt-8">
         <button 
           type="submit" 
           disabled={pending} 
-          className="w-16 h-16 bg-teal-500 hover:bg-teal-600 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+          className="w-16 h-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
         >
           {pending ? (
             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -84,22 +84,22 @@ function SignupForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium">Name</label>
-        <input type="text" className="w-full rounded-md border px-3 py-2" placeholder="Your name" {...form.register("name")} />
-        <p className="text-xs text-red-600">{form.formState.errors.name?.message}</p>
+        <label className="text-sm font-medium text-white">Name</label>
+        <input type="text" className="w-full rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="Your name" {...form.register("name")} />
+        <p className="text-xs text-red-400">{form.formState.errors.name?.message}</p>
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium">Email</label>
-        <input type="email" className="w-full rounded-md border px-3 py-2" placeholder="you@example.com" {...form.register("email")} />
-        <p className="text-xs text-red-600">{form.formState.errors.email?.message}</p>
+        <label className="text-sm font-medium text-white">Email</label>
+        <input type="email" className="w-full rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="you@example.com" {...form.register("email")} />
+        <p className="text-xs text-red-400">{form.formState.errors.email?.message}</p>
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium">Password</label>
-        <input type="password" className="w-full rounded-md border px-3 py-2" placeholder="••••••••" {...form.register("password")} />
-        <p className="text-xs text-red-600">{form.formState.errors.password?.message}</p>
+        <label className="text-sm font-medium text-white">Password</label>
+        <input type="password" className="w-full rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="••••••••" {...form.register("password")} />
+        <p className="text-xs text-red-400">{form.formState.errors.password?.message}</p>
       </div>
-      {state?.success === false && <div className="text-sm text-red-600">{state.message}</div>}
-      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center rounded-md bg-black px-4 text-white hover:opacity-90 disabled:opacity-50">{pending ? "Please wait..." : "Sign up"}</button>
+      {state?.success === false && <div className="text-sm text-red-400">{state.message}</div>}
+      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 hover:bg-red-700 px-4 text-white disabled:opacity-50">{pending ? "Please wait..." : "Sign up"}</button>
     </form>
   );
 }
