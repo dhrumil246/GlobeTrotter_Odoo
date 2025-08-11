@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from './lib/context/AuthContext';
+import { TripProvider } from './lib/context/TripContext';
+import { Header } from './components/layout/Header';
+import { Footer } from './components/layout/Footer';
 
 export const metadata: Metadata = {
   title: "GlobeTrotter - Travel Planning Made Easy",
@@ -13,8 +17,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        {children}
+      <body className="antialiased min-h-screen flex flex-col bg-gray-50">
+        <AuthProvider>
+          <TripProvider>
+            <Header />
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </TripProvider>
+        </AuthProvider>
       </body>
     </html>
   );
