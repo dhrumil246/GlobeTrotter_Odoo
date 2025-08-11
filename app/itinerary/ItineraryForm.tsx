@@ -4,7 +4,20 @@ import React, { useState } from "react";
 import { createItinerary } from "./action";
 import { useRouter } from "next/navigation";
 
-export default function ItineraryForm() {
+type Itinerary = {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  user_id: string;
+};
+
+type ItineraryFormProps = {
+  onItineraryCreated?: (newItinerary: Itinerary) => void;
+};
+
+export default function ItineraryForm({ onItineraryCreated }: ItineraryFormProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -21,14 +34,20 @@ export default function ItineraryForm() {
       setFeedback(result.message || "An error occurred while creating the itinerary.");
     } else {
       setFeedback("Itinerary created successfully!");
+      
+      // Use the actual created itinerary data from the server
+      if (result?.itinerary && onItineraryCreated) {
+        onItineraryCreated(result.itinerary);
+      }
+      
       // Reset form
       const form = document.querySelector('form') as HTMLFormElement;
       if (form) form.reset();
       
-      // Refresh the page to show the new itinerary in the list
+      // Clear success message after 3 seconds
       setTimeout(() => {
-        router.refresh();
-      }, 1000);
+        setFeedback(null);
+      }, 3000);
     }
   }
 

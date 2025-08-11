@@ -36,6 +36,8 @@ export default function ClientItineraryWrapper({
   days,
 }: ClientItineraryWrapperProps) {
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
+  const [totalTripCost, setTotalTripCost] = useState<number>(0);
+  const [isCostUpdating, setIsCostUpdating] = useState(false);
   const supabase = createSupabaseClient();
 
   // Group activities by day
@@ -44,8 +46,22 @@ export default function ClientItineraryWrapper({
     return acc;
   }, {} as Record<string, Activity[]>);
 
-  // Calculate total trip cost
-  const totalTripCost = activities?.reduce((sum, activity) => sum + Number(activity.cost), 0) || 0;
+  // Calculate initial total trip cost
+  useEffect(() => {
+    const initialTotal = activities?.reduce((sum, activity) => sum + Number(activity.cost), 0) || 0;
+    setTotalTripCost(initialTotal);
+  }, [activities]);
+
+  // Handle total cost updates from AddActivitySection
+  const handleTotalCostChange = (newTotalCost: number) => {
+    setIsCostUpdating(true);
+    setTotalTripCost(newTotalCost);
+    
+    // Hide updating animation after a brief moment
+    setTimeout(() => {
+      setIsCostUpdating(false);
+    }, 500);
+  };
 
   // Set up real-time subscription for activities
   useEffect(() => {
@@ -89,16 +105,22 @@ export default function ClientItineraryWrapper({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-white">{itinerary.title}</h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-gray-300 mt-1">
               {dayjs(itinerary.start_date).format("MMM DD")} - {dayjs(itinerary.end_date).format("MMM DD, YYYY")}
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-400 mb-1">
-              Total Trip Cost 
-              <span className="inline-block w-2 h-2 bg-red-500 rounded-full ml-2 animate-pulse" title="Live updates"></span>
+            <div className="text-sm text-gray-400 mb-1 flex items-center">
+              Total Trip Cost
+              {isCostUpdating && (
+                <div className="w-2 h-2 bg-red-500 rounded-full ml-2 animate-pulse"></div>
+              )}
             </div>
-            <div className="text-3xl font-bold text-red-500">₹{totalTripCost.toLocaleString()}</div>
+            <div className={`text-3xl font-bold transition-all duration-300 ${
+              isCostUpdating ? 'text-red-300 scale-105' : 'text-red-400'
+            }`}>
+              ₹{totalTripCost.toLocaleString()}
+            </div>
             <div className="text-xs text-gray-500 mt-1">Updates live</div>
           </div>
         </div>
@@ -112,6 +134,7 @@ export default function ClientItineraryWrapper({
         itinerary={itinerary}
         days={days}
         activitiesByDay={activitiesByDay}
+        onTotalCostChange={handleTotalCostChange}
       />
     </>
   );

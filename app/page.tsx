@@ -37,7 +37,7 @@ export default function Home() {
 
           <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">💳</span>
+              <span className="text-white text-2xl">��</span>
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">Track Budget</h3>
             <p className="text-gray-300 mb-4">Monitor your travel expenses and stay within your budget.</p>
@@ -51,7 +51,7 @@ export default function Home() {
 
           <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">🌍</span>
+              <span className="text-white text-2xl">��</span>
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">Discover Places</h3>
             <p className="text-gray-300 mb-4">Explore new destinations and create unforgettable memories.</p>
@@ -73,14 +73,14 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Link 
               href="/signup" 
-              className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all transform hover:scale-105"
+              className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105"
             >
               <span className="mr-2">🚀</span>
               Create Account
             </Link>
             <Link 
               href="/login" 
-              className="inline-flex items-center justify-center px-8 py-4 border-2 border-red-600 text-red-400 rounded-lg font-medium hover:bg-red-600 hover:text-white transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 border-2 border-red-500 text-red-500 rounded-lg font-medium hover:bg-red-500 hover:text-white transition-all"
             >
               <span className="mr-2">🔑</span>
               Log In

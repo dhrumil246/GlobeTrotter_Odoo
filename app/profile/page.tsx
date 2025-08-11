@@ -35,7 +35,7 @@ export default function ProfilePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        await fetchUserProfile(user.id);
+        await createUserProfile(user);
         await fetchUserTrips(user.id);
       }
       setLoading(false);
@@ -44,59 +44,46 @@ export default function ProfilePage() {
     getUser();
   }, [supabase.auth]);
 
-  const fetchUserProfile = async (userId: string) => {
+  const createUserProfile = async (user: any) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-      }
-
-      if (data) {
-        setProfile(data);
-      } else {
-        // Create default profile if none exists
-        setProfile({
-          id: userId,
-          email: user?.email || '',
-          full_name: user?.user_metadata?.full_name || '',
-          avatar_url: user?.user_metadata?.avatar_url || '',
-          created_at: new Date().toISOString()
-        });
-      }
+      // Create profile from user data instead of fetching from non-existent table
+      const userProfile: UserProfile = {
+        id: user.id,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        avatar_url: user.user_metadata?.avatar_url || '',
+        created_at: user.created_at || new Date().toISOString()
+      };
+      
+      setProfile(userProfile);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error creating user profile:', error);
     }
   };
 
   const fetchUserTrips = async (userId: string) => {
     try {
-      // Fetch planned trips
-      const { data: plannedData } = await supabase
-        .from('trips')
+      // Fetch from the 'itinerary' table (which actually exists in your app)
+      const { data: itineraryData } = await supabase
+        .from('itinerary')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'planned')
         .order('created_at', { ascending: false });
 
-      if (plannedData) {
-        setPlannedTrips(plannedData);
-      }
-
-      // Fetch completed trips
-      const { data: completedData } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false });
-
-      if (completedData) {
-        setPreviousTrips(completedData);
+      if (itineraryData && itineraryData.length > 0) {
+        // Convert itinerary data to trip format
+        const convertedTrips: Trip[] = itineraryData.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          destination: item.description || 'No destination specified',
+          start_date: item.start_date,
+          end_date: item.end_date,
+          status: 'planned' as const,
+          image: undefined
+        }));
+        
+        setPlannedTrips(convertedTrips);
+        setPreviousTrips([]); // No completed trips in itinerary table
       }
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -169,96 +156,67 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Preplanned Trips Section */}
+        {/* My Itineraries Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Preplanned Trips</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">My Itineraries</h2>
           {plannedTrips.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {plannedTrips.map((trip) => (
-                <div key={trip.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="h-48 bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                <div key={trip.id} className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg overflow-hidden">
+                  <div className="h-48 bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
                     <span className="text-6xl">✈️</span>
                   </div>
                   <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{trip.title}</h3>
-                    <p className="text-gray-600 mb-2">📍 {trip.destination}</p>
+                    <h3 className="text-xl font-semibold text-white mb-2">{trip.title}</h3>
+                    <p className="text-gray-300 mb-2">📍 {trip.destination}</p>
                     <p className="text-sm text-gray-500 mb-4">
                       {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
                     </p>
-                    <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
-                      View
-                    </button>
+                    <Link 
+                      href={`/itinerary/${trip.id}`}
+                      className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors inline-block text-center"
+                    >
+                      View Details
+                    </Link>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8 text-center">
               <div className="text-4xl mb-4">📋</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No planned trips yet</h3>
-              <p className="text-gray-600 mb-4">Start planning your next adventure!</p>
-              <Link href="/itinerary" className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
-                Create Trip
+              <h3 className="text-xl font-semibold text-white mb-2">No itineraries yet</h3>
+              <p className="text-gray-300 mb-4">Start planning your next adventure!</p>
+              <Link href="/itinerary" className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                Create Itinerary
               </Link>
             </div>
           )}
         </div>
 
-        {/* Previous Trips Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Previous Trips</h2>
-          {previousTrips.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {previousTrips.map((trip) => (
-                <div key={trip.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="h-48 bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
-                    <span className="text-6xl">🏆</span>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{trip.title}</h3>
-                    <p className="text-gray-600 mb-2">📍 {trip.destination}</p>
-                    <p className="text-sm text-gray-500 mb-4">
-                      {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
-                    </p>
-                    <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
-                      View
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="text-4xl mb-4">🎯</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No completed trips yet</h3>
-              <p className="text-gray-600 mb-4">Complete your first trip to see it here!</p>
-            </div>
-          )}
-        </div>
-
         {/* Footer with Three Buttons */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-gray-900 border border-red-500/20 rounded-2xl shadow-xl p-8">
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Link 
               href="/calendar" 
-              className="flex items-center justify-center px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+              className="flex items-center justify-center px-8 py-4 bg-gray-800 border-2 border-red-500/30 text-white rounded-xl font-semibold hover:bg-gray-700 hover:border-red-500/50 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
             >
               <span className="mr-3 text-xl">📅</span>
               Calendar
             </Link>
             <Link 
-              href="/community" 
-              className="flex items-center justify-center px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+              href="/dashboard" 
+              className="flex items-center justify-center px-8 py-4 bg-gray-800 border-2 border-red-500/30 text-white rounded-xl font-semibold hover:bg-gray-700 hover:border-red-500/50 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
             >
-              <span className="mr-3 text-xl">👥</span>
-              Community
+              <span className="mr-3 text-xl">📊</span>
+              Dashboard
             </Link>
             <Link 
-              href="/dashboard" 
-              className="flex items-center justify-center px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+              href="/itinerary" 
+              className="flex items-center justify-center px-8 py-4 bg-gray-800 border-2 border-red-500/30 text-white rounded-xl font-semibold hover:bg-gray-700 hover:border-red-500/50 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
             >
-              <span className="mr-3 text-xl">⬅️</span>
-              Back
+              <span className="mr-3 text-xl">✈️</span>
+              My Itineraries
             </Link>
           </div>
         </div>

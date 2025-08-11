@@ -16,13 +16,23 @@ export async function createItinerary(formData: FormData) {
     return { success: false, message: "User not authenticated" };
   }
 
-  // Insert itinerary with user_id
-  const { error } = await supabase.from("itinerary").insert([
-    { title, description, start_date: startDate, end_date: endDate, user_id: user.id }
-  ]);
+  // Insert itinerary with user_id and return the created data
+  const { data: newItinerary, error } = await supabase
+    .from("itinerary")
+    .insert([
+      { title, description, start_date: startDate, end_date: endDate, user_id: user.id }
+    ])
+    .select()
+    .single();
 
   if (error) {
     return { success: false, message: error.message };
   }
-  return { success: true };
+  
+  return { 
+    success: true, 
+    itineraryId: newItinerary.id,
+    userId: user.id,
+    itinerary: newItinerary
+  };
 }
