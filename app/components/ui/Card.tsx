@@ -15,6 +15,7 @@ interface CardHeaderProps {
 interface CardContentProps {
   children: React.ReactNode;
   className?: string;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
 interface CardFooterProps {
@@ -50,11 +51,20 @@ const CardHeader = ({ children, className }: CardHeaderProps) => (
   </div>
 );
 
-const CardContent = ({ children, className }: CardContentProps) => (
-  <div className={cn('pt-6', className)}>
-    {children}
-  </div>
-);
+const CardContent = ({ children, className, padding = 'md' }: CardContentProps) => {
+  const paddingClasses = {
+    none: '',
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8',
+  };
+
+  return (
+    <div className={cn('pt-6', paddingClasses[padding], className)}>
+      {children}
+    </div>
+  );
+};
 
 const CardFooter = ({ children, className }: CardFooterProps) => (
   <div className={cn('flex items-center pt-6', className)}>
