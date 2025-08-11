@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MovingDestinationCards from "./components/MovingDestinationCards";
+import AutoTripSuggestions from "./components/AutoTripSuggestions";
 
 export default function Home() {
   return (
@@ -37,7 +38,7 @@ export default function Home() {
 
           <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">��</span>
+              <span className="text-white text-2xl"></span>
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">Track Budget</h3>
             <p className="text-gray-300 mb-4">Monitor your travel expenses and stay within your budget.</p>
@@ -51,7 +52,7 @@ export default function Home() {
 
           <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">��</span>
+              <span className="text-white text-2xl"></span>
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">Discover Places</h3>
             <p className="text-gray-300 mb-4">Explore new destinations and create unforgettable memories.</p>
@@ -66,6 +67,9 @@ export default function Home() {
 
         {/* Moving Destination Cards */}
         <MovingDestinationCards />
+
+        {/* AI Trip Suggestions */}
+        <AutoTripSuggestions />
 
         {/* Quick Actions */}
         <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8">
@@ -106,8 +110,8 @@ export default function Home() {
             <h4 className="font-semibold text-white">Budget Tracking</h4>
           </div>
           <div className="text-center p-4">
-            <div className="text-3xl mb-2">📱</div>
-            <h4 className="font-semibold text-white">Mobile Friendly</h4>
+            <div className="text-3xl mb-2">🤖</div>
+            <h4 className="font-semibold text-white">AI Suggestions</h4>
           </div>
           <div className="text-center p-4">
             <div className="text-3xl mb-2">🔒</div>

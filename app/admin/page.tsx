@@ -4,45 +4,61 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 
 export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [itineraries, setItineraries] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [error, setError] = useState<string>("");
   const supabase = createSupabaseClient();
 
   useEffect(() => {
     const checkAdmin = async () => {
       try {
+        console.log("=== ADMIN CHECK START ===");
+        
         // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          alert('Please log in first');
-          window.location.href = '/login';
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        console.log("User check result:", { user, error: userError });
+        
+        if (userError || !user) {
+          console.log("No user found, redirecting to login");
+          setError("No user found");
+          setLoading(false);
           return;
         }
 
+        console.log("User found:", user.email);
         setUser(user);
 
-        // Check if user is admin
-        const { data: userData } = await supabase
+        // Check if user is admin from users table
+        console.log("Checking admin role from users table...");
+        const { data: userData, error: roleError } = await supabase
           .from('users')
           .select('*')
           .eq('email', user.email)
           .single();
 
-        if (!userData || userData.role !== 'admin') {
-          alert('You are not an admin user');
-          window.location.href = '/dashboard';
+        console.log("Role check result:", { userData, error: roleError });
+
+        if (roleError) {
+          console.error("Role check error:", roleError);
+          setError(`Role check failed: ${roleError.message}`);
+          setLoading(false);
           return;
         }
 
-        // Fetch data
-        await fetchData();
+        if (!userData || userData.role !== 'admin') {
+          console.log("User is not admin");
+          setError("You are not an admin user!");
+          setLoading(false);
+          return;
+        }
+
+        console.log("User is admin, setting state...");
+        setIsAdmin(true);
         setLoading(false);
+        
       } catch (error) {
-        console.error('Error:', error);
-        alert('Error checking admin access');
+        console.error("Admin check error:", error);
+        setError(`Error: ${error}`);
         setLoading(false);
       }
     };
@@ -50,37 +66,47 @@ export default function AdminDashboard() {
     checkAdmin();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      // Fetch users
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('*');
-      setUsers(usersData || []);
-
-      // Fetch itineraries
-      const { data: itinerariesData } = await supabase
-        .from('itinerary')
-        .select('*');
-      setItineraries(itinerariesData || []);
-
-      // Fetch activities
-      const { data: activitiesData } = await supabase
-        .from('activities')
-        .select('*');
-      setActivities(activitiesData || []);
-
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-white">Loading Admin Dashboard...</p>
+          <p className="text-white text-xl">Checking Admin Access...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Admin Access Error</h1>
+          <p className="text-gray-300 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.href = '/dashboard'}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Access Denied</h1>
+          <p className="text-gray-300 mb-4">You are not authorized to view this page.</p>
+          <button
+            onClick={() => window.location.href = '/dashboard'}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Go to Dashboard
+          </button>
         </div>
       </div>
     );
@@ -91,189 +117,57 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">�� ADMIN DASHBOARD</h1>
-          <p className="text-gray-300">Welcome, {user?.email}</p>
-          <p className="text-red-400 text-sm">You have admin privileges</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-gray-900 border border-red-500/20 rounded-xl p-2 mb-8">
-          <div className="flex justify-center space-x-2">
-            {['overview', 'users', 'itineraries', 'activities'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                  activeTab === tab
-                    ? 'bg-red-600 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+          <h1 className="text-6xl font-bold text-red-500 mb-4"> ADMIN DASHBOARD</h1>
+          <p className="text-2xl text-white mb-2">Welcome, {user?.email}</p>
+          <p className="text-red-400 text-lg font-semibold">You have ADMIN privileges</p>
+          <div className="mt-4 p-2 bg-red-600 text-white rounded-lg inline-block">
+             SECURE ADMIN AREA
           </div>
         </div>
 
-        {/* Content */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6 text-center">
-                <div className="text-3xl mb-2">👥</div>
-                <div className="text-2xl font-bold text-white">{users.length}</div>
-                <div className="text-gray-400">Total Users</div>
-              </div>
-              <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6 text-center">
-                <div className="text-3xl mb-2">✈️</div>
-                <div className="text-2xl font-bold text-white">{itineraries.length}</div>
-                <div className="text-gray-400">Itineraries</div>
-              </div>
-              <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6 text-center">
-                <div className="text-3xl mb-2">🎯</div>
-                <div className="text-2xl font-bold text-white">{activities.length}</div>
-                <div className="text-gray-400">Activities</div>
-              </div>
-              <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6 text-center">
-                <div className="text-3xl mb-2">💰</div>
-                <div className="text-2xl font-bold text-white">
-                  ${activities.reduce((sum, a) => sum + (a.cost || 0), 0).toFixed(2)}
-                </div>
-                <div className="text-gray-400">Total Revenue</div>
-              </div>
-            </div>
+        {/* Success Message */}
+        <div className="bg-green-900 border-2 border-green-500 rounded-xl p-6 mb-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">✅ ADMIN ACCESS SUCCESSFUL!</h2>
+          <p className="text-green-200">You are now viewing the admin dashboard</p>
+        </div>
 
-            {/* Quick Actions */}
-            <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => setActiveTab('users')}
-                  className="p-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-white transition-colors"
-                >
-                  <div className="text-2xl mb-2">👥</div>
-                  <div className="font-semibold">Manage Users</div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('itineraries')}
-                  className="p-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-white transition-colors"
-                >
-                  <div className="text-2xl mb-2">✈️</div>
-                  <div className="font-semibold">View Itineraries</div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('activities')}
-                  className="p-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-white transition-colors"
-                >
-                  <div className="text-2xl mb-2">🎯</div>
-                  <div className="font-semibold">View Activities</div>
-                </button>
-              </div>
+        {/* Admin Features */}
+        <div className="bg-gray-900 border-2 border-red-500 rounded-xl p-6 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4 text-center"> ADMIN FEATURES</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-red-800 rounded-lg text-center">
+              <div className="text-3xl mb-2">👥</div>
+              <div className="text-white font-semibold">Manage Users</div>
+              <div className="text-red-200 text-sm">View all users</div>
             </div>
-
-            {/* Refresh Button */}
-            <div className="text-center">
-              <button
-                onClick={fetchData}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                🔄 Refresh All Data
-              </button>
+            <div className="p-4 bg-red-800 rounded-lg text-center">
+              <div className="text-3xl mb-2">✈️</div>
+              <div className="text-white font-semibold">View All Trips</div>
+              <div className="text-red-200 text-sm">All itineraries</div>
+            </div>
+            <div className="p-4 bg-red-800 rounded-lg text-center">
+              <div className="text-3xl mb-2">📊</div>
+              <div className="text-white font-semibold">Analytics</div>
+              <div className="text-red-200 text-sm">Platform stats</div>
             </div>
           </div>
-        )}
+        </div>
 
-        {activeTab === 'users' && (
-          <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">All Users ({users.length})</h3>
-            {users.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-700">
-                      <th className="py-3 px-4 text-left text-gray-300">Email</th>
-                      <th className="py-3 px-4 text-left text-gray-300">Role</th>
-                      <th className="py-3 px-4 text-left text-gray-300">Joined</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b border-gray-800">
-                        <td className="py-3 px-4 text-white">{user.email}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            user.role === 'admin' ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-300'
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-gray-400">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center py-8">No users found</p>
-            )}
+        {/* Debug Info */}
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+          <h3 className="text-white font-semibold mb-2">Debug Information:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-300">User Email: <span className="text-white">{user?.email}</span></p>
+              <p className="text-gray-300">User ID: <span className="text-white">{user?.id}</span></p>
+              <p className="text-gray-300">Admin Status: <span className="text-green-400 font-bold">{isAdmin ? 'YES' : 'NO'}</span></p>
+            </div>
+            <div>
+              <p className="text-gray-300">Current URL: <span className="text-white">{typeof window !== 'undefined' ? window.location.href : 'N/A'}</span></p>
+              <p className="text-gray-300">Page Type: <span className="text-red-400 font-bold">ADMIN DASHBOARD</span></p>
+            </div>
           </div>
-        )}
-
-        {activeTab === 'itineraries' && (
-          <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">All Itineraries ({itineraries.length})</h3>
-            {itineraries.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {itineraries.map((itinerary) => (
-                  <div key={itinerary.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                    <h4 className="text-white font-semibold mb-2">{itinerary.title}</h4>
-                    <p className="text-gray-400 text-sm mb-2">{itinerary.description}</p>
-                    <p className="text-gray-500 text-xs">
-                      {new Date(itinerary.start_date).toLocaleDateString()} - {new Date(itinerary.end_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center py-8">No itineraries found</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'activities' && (
-          <div className="bg-gray-900 border border-red-500/20 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">All Activities ({activities.length})</h3>
-            {activities.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-700">
-                      <th className="py-3 px-4 text-left text-gray-300">Activity</th>
-                      <th className="py-3 px-4 text-left text-gray-300">Cost</th>
-                      <th className="py-3 px-4 text-left text-gray-300">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activities.map((activity) => (
-                      <tr key={activity.id} className="border-b border-gray-800">
-                        <td className="py-3 px-4 text-white">{activity.activity_name}</td>
-                        <td className="py-3 px-4 text-white">${activity.cost}</td>
-                        <td className="py-3 px-4 text-gray-400">
-                          {new Date(activity.date).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center py-8">No activities found</p>
-            )}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

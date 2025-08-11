@@ -9,114 +9,57 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const supabase = createSupabaseClient();
   const router = useRouter();
 
   useEffect(() => {
-    let mounted = true;
-
-    // Get current user immediately
     const getUser = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
         if (error) {
           console.error('Error getting user:', error);
         }
-        if (mounted) {
-          setUser(user);
-          
-          // Check admin role from users table
-          if (user) {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('role')
-              .eq('email', user.email)
-              .single();
-            
-            setIsAdmin(userData?.role === 'admin');
-          }
-          
-          setLoading(false);
-        }
+        console.log('Initial user check:', user?.email);
+        setUser(user);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching user:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     getUser();
 
-    // Listen for auth changes with more detailed logging
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth changes with better logging
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
-      if (mounted) {
-        setUser(session?.user ?? null);
-        
-        // Check admin role when auth state changes
-        if (session?.user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('email', session.user.email)
-            .single();
-          
-          setIsAdmin(userData?.role === 'admin');
-        } else {
-          setIsAdmin(false);
-        }
-        
+      if (event === 'SIGNED_IN') {
+        console.log('User signed in:', session?.user?.email);
+        setUser(session?.user);
         setLoading(false);
-        
-        // Force a re-render by updating the router
-        if (event === 'SIGNED_IN') {
-          router.refresh();
-        }
+        // Force a re-render
+        router.refresh();
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+        setUser(null);
+        setLoading(false);
+        router.refresh();
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed:', session?.user?.email);
+        setUser(session?.user);
+        setLoading(false);
       }
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [supabase.auth, router]);
-
-  // Additional effect to check auth state periodically (fallback)
-  useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        
-        if (user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('email', user.email)
-            .single();
-          
-          setIsAdmin(userData?.role === 'admin');
-        }
-      } catch (error) {
-        console.error('Error checking auth state:', error);
-      }
-    };
-
-    // Check auth state every 2 seconds as a fallback
-    const interval = setInterval(checkAuthState, 2000);
-    
-    return () => clearInterval(interval);
-  }, [supabase.auth]);
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       setShowDropdown(false);
       setUser(null);
-      setIsAdmin(false);
       router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -134,6 +77,11 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDropdown]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Navbar state updated:', { user: user?.email, loading });
+  }, [user, loading]);
 
   return (
     <nav className="bg-gradient-to-br from-gray-900 to-black border-b border-red-500/20 shadow-lg">
@@ -178,9 +126,6 @@ export default function Navbar() {
                     )}
                   </div>
                   <span className="text-sm font-medium hidden sm:block">{user.email}</span>
-                  {isAdmin && (
-                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">ADMIN</span>
-                  )}
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -210,18 +155,6 @@ export default function Navbar() {
                     >
                       My Itineraries
                     </Link>
-                    {isAdmin && (
-                      <>
-                        <hr className="my-1 border-gray-700" />
-                        <Link
-                          href="/admin"
-                          className="block px-4 py-2 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 font-semibold"
-                          onClick={() => setShowDropdown(false)}
-                        >
-                          🛠️ Admin Dashboard
-                        </Link>
-                      </>
-                    )}
                     <hr className="my-1 border-gray-700" />
                     <button
                       onClick={handleSignOut}

@@ -28,21 +28,33 @@ export default function ProfilePage() {
   const [plannedTrips, setPlannedTrips] = useState<Trip[]>([]);
   const [previousTrips, setPreviousTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
   const supabase = createSupabaseClient();
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        await createUserProfile(user);
-        await fetchUserTrips(user.id);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Auth error:', error);
+          setLoading(false);
+          return;
+        }
+        
+        if (user) {
+          setUser(user);
+          await createUserProfile(user);
+          await fetchUserTrips(user.id);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error getting user:', error);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getUser();
-  }, [supabase.auth]);
+  }, []);
 
   const createUserProfile = async (user: any) => {
     try {
@@ -64,14 +76,20 @@ export default function ProfilePage() {
   const fetchUserTrips = async (userId: string) => {
     try {
       // Fetch from the 'itinerary' table (which actually exists in your app)
-      const { data: itineraryData } = await supabase
+      const { data: itineraryData, error } = await supabase
         .from('itinerary')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      if (error) {
+        console.error('Error fetching itineraries:', error);
+        return;
+      }
+
       if (itineraryData && itineraryData.length > 0) {
-        // Convert itinerary data to trip format
+        // Convert itinerary data to trip format and categorize by date
+        const today = new Date();
         const convertedTrips: Trip[] = itineraryData.map((item: any) => ({
           id: item.id,
           title: item.title,
@@ -82,11 +100,67 @@ export default function ProfilePage() {
           image: undefined
         }));
         
-        setPlannedTrips(convertedTrips);
-        setPreviousTrips([]); // No completed trips in itinerary table
+        // Separate trips into future/present and past
+        const futurePresentTrips = convertedTrips.filter(trip => {
+          const endDate = new Date(trip.end_date);
+          return endDate >= today;
+        });
+        
+        const pastTrips = convertedTrips.filter(trip => {
+          const endDate = new Date(trip.end_date);
+          return endDate < today;
+        });
+        
+        setPlannedTrips(futurePresentTrips);
+        setPreviousTrips(pastTrips);
       }
     } catch (error) {
       console.error('Error fetching trips:', error);
+    }
+  };
+
+  const deleteItinerary = async (tripId: string) => {
+    if (!confirm('Are you sure you want to delete this itinerary? This action cannot be undone and will remove all associated activities.')) {
+      return;
+    }
+
+    setDeletingTripId(tripId);
+    
+    try {
+      // First, delete all activities associated with this itinerary
+      const { error: activitiesError } = await supabase
+        .from('activities')
+        .delete()
+        .eq('itinerary_id', tripId);
+
+      if (activitiesError) {
+        console.error('Error deleting activities:', activitiesError);
+        // Continue with itinerary deletion even if activities deletion fails
+      }
+
+      // Then, delete the itinerary itself
+      const { error: itineraryError } = await supabase
+        .from('itinerary')
+        .delete()
+        .eq('id', tripId);
+
+      if (itineraryError) {
+        console.error('Error deleting itinerary:', itineraryError);
+        alert('Failed to delete itinerary. Please try again.');
+        setDeletingTripId(null);
+        return;
+      }
+
+      // Remove the trip from local state
+      setPlannedTrips(prev => prev.filter(trip => trip.id !== tripId));
+      setPreviousTrips(prev => prev.filter(trip => trip.id !== tripId));
+
+      alert('Itinerary deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting itinerary:', error);
+      alert('An error occurred while deleting the itinerary. Please try again.');
+    } finally {
+      setDeletingTripId(null);
     }
   };
 
@@ -156,13 +230,18 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* My Itineraries Section */}
+        {/* Future/Present Trips Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6">My Itineraries</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Future & Present Trips</h2>
+            <span className="text-sm text-gray-400 bg-gray-800 px-3 py-1 rounded-full">
+              {plannedTrips.length} {plannedTrips.length === 1 ? 'trip' : 'trips'}
+            </span>
+          </div>
           {plannedTrips.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {plannedTrips.map((trip) => (
-                <div key={trip.id} className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg overflow-hidden">
+                <div key={trip.id} className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <div className="h-48 bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
                     <span className="text-6xl">✈️</span>
                   </div>
@@ -172,24 +251,114 @@ export default function ProfilePage() {
                     <p className="text-sm text-gray-500 mb-4">
                       {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
                     </p>
-                    <Link 
-                      href={`/itinerary/${trip.id}`}
-                      className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors inline-block text-center"
+                    <div className="flex space-x-2 mb-3">
+                      <Link 
+                        href={`/itinerary/${trip.id}`}
+                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-center text-sm"
+                      >
+                        View Details
+                      </Link>
+                      <Link 
+                        href={`/itinerary/${trip.id}`}
+                        className="flex-1 bg-gray-700 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors text-center text-sm"
+                      >
+                        Add Activity
+                      </Link>
+                    </div>
+                    <button
+                      onClick={() => deleteItinerary(trip.id)}
+                      disabled={deletingTripId === trip.id}
+                      className="w-full bg-red-800 text-white py-2 px-4 rounded-lg hover:bg-red-900 transition-colors text-center text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
-                      View Details
-                    </Link>
+                      {deletingTripId === trip.id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-2">🗑️</span>
+                          Delete Itinerary
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="bg-gray-900 border border-red-500/20 rounded-xl shadow-lg p-8 text-center">
-              <div className="text-4xl mb-4">📋</div>
-              <h3 className="text-xl font-semibold text-white mb-2">No itineraries yet</h3>
+              <div className="text-4xl mb-4">🚀</div>
+              <h3 className="text-xl font-semibold text-white mb-2">No upcoming trips</h3>
               <p className="text-gray-300 mb-4">Start planning your next adventure!</p>
               <Link href="/itinerary" className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
                 Create Itinerary
               </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Past Trips Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Past Trips</h2>
+            <span className="text-sm text-gray-400 bg-gray-800 px-3 py-1 rounded-full">
+              {previousTrips.length} {previousTrips.length === 1 ? 'trip' : 'trips'}
+            </span>
+          </div>
+          {previousTrips.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {previousTrips.map((trip) => (
+                <div key={trip.id} className="bg-gray-900 border border-gray-600/20 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="h-48 bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
+                    <span className="text-6xl">🏛️</span>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-white mb-2">{trip.title}</h3>
+                    <p className="text-gray-300 mb-2">📍 {trip.destination}</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
+                    </p>
+                    <div className="flex space-x-2 mb-3">
+                      <Link 
+                        href={`/itinerary/${trip.id}`}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors text-center text-sm"
+                      >
+                        View Details
+                      </Link>
+                      <Link 
+                        href={`/itinerary/${trip.id}`}
+                        className="flex-1 bg-gray-700 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors text-center text-sm"
+                      >
+                        Add Activity
+                      </Link>
+                    </div>
+                    <button
+                      onClick={() => deleteItinerary(trip.id)}
+                      disabled={deletingTripId === trip.id}
+                      className="w-full bg-gray-800 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors text-center text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {deletingTripId === trip.id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-2">🗑️</span>
+                          Delete Itinerary
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gray-900 border border-gray-600/20 rounded-xl shadow-lg p-8 text-center">
+              <div className="text-4xl mb-4">📚</div>
+              <h3 className="text-xl font-semibold text-white mb-2">No past trips yet</h3>
+              <p className="text-gray-300 mb-4">Your travel history will appear here after completing trips.</p>
             </div>
           )}
         </div>

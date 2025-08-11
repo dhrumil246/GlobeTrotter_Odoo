@@ -39,6 +39,7 @@ export default function AddActivitySection({
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [lastAddedActivityId, setLastAddedActivityId] = useState<string | null>(null);
   const [isCostUpdating, setIsCostUpdating] = useState(false);
+  const [deletingActivityId, setDeletingActivityId] = useState<string | null>(null);
 
   // Calculate total trip cost from all activities - THIS UPDATES IN REAL-TIME
   const totalTripCost = Object.values(localActivitiesByDay)
@@ -88,6 +89,51 @@ export default function AddActivitySection({
     }
     // Close the form after successful addition
     setShowFormForDay(null);
+  };
+
+  // Handle activity deletion
+  const handleDeleteActivity = async (activityId: string) => {
+    if (!confirm('Are you sure you want to delete this activity? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingActivityId(activityId);
+    
+    try {
+      const response = await fetch('/api/delete-activity', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ activity_id: activityId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete activity');
+      }
+
+      // Remove activity from local state
+      setLocalActivitiesByDay(prev => {
+        const updatedState = { ...prev };
+        Object.keys(updatedState).forEach(day => {
+          updatedState[day] = updatedState[day].filter(activity => activity.id !== activityId);
+        });
+        return updatedState;
+      });
+
+      // Show cost updating animation
+      setIsCostUpdating(true);
+      setTimeout(() => {
+        setIsCostUpdating(false);
+      }, 500);
+
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      alert(`Failed to delete activity: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setDeletingActivityId(null);
+    }
   };
 
   // Handle form cancel
@@ -157,12 +203,15 @@ export default function AddActivitySection({
             <div className="space-y-3 mb-4">
               {dayActivities.map((activity: Activity) => {
                 const isNewlyAdded = activity.id === lastAddedActivityId;
+                const isDeleting = activity.id === deletingActivityId;
                 return (
                   <div 
                     key={activity.id} 
                     className={`flex items-center justify-between p-3 rounded-lg transition-all duration-500 ${
                       isNewlyAdded 
                         ? 'bg-red-500/10 border-2 border-red-500/30 animate-slide-in shadow-md' 
+                        : isDeleting
+                        ? 'bg-gray-700/50 opacity-75'
                         : 'bg-gray-800'
                     }`}
                   >
@@ -177,9 +226,29 @@ export default function AddActivitySection({
                         </span>
                       )}
                     </div>
-                    <span className={`font-semibold ${
-                      isNewlyAdded ? 'text-red-300' : 'text-gray-300'
-                    }`}>₹{Number(activity.cost).toLocaleString()}</span>
+                    <div className="flex items-center space-x-3">
+                      <span className={`font-semibold ${
+                        isNewlyAdded ? 'text-red-300' : 'text-gray-300'
+                      }`}>₹{Number(activity.cost).toLocaleString()}</span>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteActivity(activity.id)}
+                        disabled={isDeleting}
+                        className={`p-2 rounded-lg transition-all duration-200 ${
+                          isDeleting
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            : 'bg-red-600 hover:bg-red-700 text-white hover:scale-105'
+                        }`}
+                        title="Delete activity"
+                      >
+                        {isDeleting ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <span className="text-sm">🗑</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 );
               })}

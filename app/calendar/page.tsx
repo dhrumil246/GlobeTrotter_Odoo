@@ -3,104 +3,112 @@ import { useState, useEffect } from "react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
-interface Trip {
+interface Itinerary {
   id: string;
   title: string;
-  destination: string;
+  description: string;
   start_date: string;
   end_date: string;
-  status: 'planned' | 'completed';
+  user_id: string;
+  created_at: string;
 }
 
 interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
   isToday: boolean;
-  hasTrip: boolean;
-  tripDetails?: Trip[];
+  itineraries: Itinerary[];
 }
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
-  const [userTrips, setUserTrips] = useState<Trip[]>([]);
+  const [itineraries, setItineraries] = useState<Itinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createSupabaseClient();
 
   useEffect(() => {
-    fetchUserTrips();
-    
-    // Set up interval to refresh data every 30 seconds for real-time updates
-    const refreshInterval = setInterval(() => {
-      fetchUserTrips();
-    }, 30000); // 30 seconds
-    
-    return () => clearInterval(refreshInterval);
+    fetchItineraries();
   }, []);
 
-  useEffect(() => {
-    generateCalendarDays();
-  }, [currentDate, userTrips]);
-
-  const fetchUserTrips = async () => {
+  const fetchItineraries = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: trips } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('start_date', { ascending: true });
+      if (!user) return;
 
-        if (trips) {
-          setUserTrips(trips);
-        }
+      const { data, error } = await supabase
+        .from('itinerary')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching itineraries:', error);
+        return;
       }
-      setLoading(false);
+
+      setItineraries(data || []);
     } catch (error) {
-      console.error('Error fetching trips:', error);
+      console.error('Error:', error);
+    } finally {
       setLoading(false);
     }
   };
 
-  const generateCalendarDays = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+  const generateCalendarDays = (date: Date): CalendarDay[] => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
     
-    // Get first day of month and last day of month
+    // Get the first day of the month
     const firstDayOfMonth = new Date(year, month, 1);
+    // Get the last day of the month
     const lastDayOfMonth = new Date(year, month + 1, 0);
     
-    // Get first day of calendar (including previous month's days)
-    const firstDayOfCalendar = new Date(firstDayOfMonth);
-    firstDayOfCalendar.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay());
+    // Get the day of the week for the first day (0 = Sunday, 1 = Monday, etc.)
+    const firstDayOfWeek = firstDayOfMonth.getDay();
     
-    // Get last day of calendar (including next month's days)
-    const lastDayOfCalendar = new Date(lastDayOfMonth);
-    lastDayOfCalendar.setDate(lastDayOfMonth.getDate() + (6 - lastDayOfMonth.getDay()));
+    // Calculate the start date for the calendar grid
+    // We want to show the full week that contains the first day of the month
+    const startDate = new Date(firstDayOfMonth);
+    startDate.setDate(startDate.getDate() - firstDayOfWeek);
     
     const days: CalendarDay[] = [];
-    const currentDateObj = new Date(firstDayOfCalendar);
+    const today = new Date();
     
-    while (currentDateObj <= lastDayOfCalendar) {
-      const tripsOnThisDate = userTrips.filter(trip => {
-        const startDate = new Date(trip.start_date);
-        const endDate = new Date(trip.end_date);
-        return currentDateObj >= startDate && currentDateObj <= endDate;
+    // Generate 42 days (6 weeks * 7 days) to ensure we cover the entire month
+    for (let i = 0; i < 42; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const isCurrentMonth = currentDate.getMonth() === month;
+      const isToday = currentDate.toDateString() === today.toDateString();
+      
+      // Find itineraries for this date - FIXED DATE COMPARISON
+      const dayItineraries = itineraries.filter(itinerary => {
+        const startDate = new Date(itinerary.start_date);
+        const endDate = new Date(itinerary.end_date);
+        
+        // Reset time to midnight for accurate date comparison
+        const currentDateMidnight = new Date(currentDate);
+        currentDateMidnight.setHours(0, 0, 0, 0);
+        
+        const startDateMidnight = new Date(startDate);
+        startDateMidnight.setHours(0, 0, 0, 0);
+        
+        const endDateMidnight = new Date(endDate);
+        endDateMidnight.setHours(0, 0, 0, 0);
+        
+        // Check if current date is between start and end dates (inclusive)
+        return currentDateMidnight >= startDateMidnight && currentDateMidnight <= endDateMidnight;
       });
 
       days.push({
-        date: new Date(currentDateObj),
-        isCurrentMonth: currentDateObj.getMonth() === month,
-        isToday: currentDateObj.toDateString() === new Date().toDateString(),
-        hasTrip: tripsOnThisDate.length > 0,
-        tripDetails: tripsOnThisDate
+        date: currentDate,
+        isCurrentMonth,
+        isToday,
+        itineraries: dayItineraries
       });
-      
-      currentDateObj.setDate(currentDateObj.getDate() + 1);
     }
     
-    setCalendarDays(days);
+    return days;
   };
 
   const goToPreviousMonth = () => {
@@ -111,153 +119,125 @@ export default function CalendarPage() {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
   };
 
-  const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const formatDay = (date: Date) => {
+    return date.getDate();
   };
 
-  const getDayName = (dayIndex: number) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[dayIndex];
-  };
+  const calendarDays = generateCalendarDays(currentDate);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading calendar...</p>
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
+            <p className="mt-4">Loading calendar...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-8">
-          <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-            <Link 
-              href="/profile" 
-              className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-md"
-            >
-              <span className="mr-2">⬅️</span>
-              Back to Profile
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-800">Travel Calendar</h1>
-          </div>
-          <button
-            onClick={goToToday}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-          >
-            Today
-          </button>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-red-500 mb-4">Travel Calendar</h1>
+          <p className="text-gray-300">View all your upcoming trips and adventures</p>
         </div>
 
         {/* Calendar Navigation */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={goToPreviousMonth}
-              className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <h2 className="text-3xl font-bold text-gray-800">
-              {formatMonthYear(currentDate)}
-            </h2>
-            
-            <button
-              onClick={goToNextMonth}
-              className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={goToPreviousMonth}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            ← Previous Month
+          </button>
+          
+          <h2 className="text-2xl font-semibold text-white">
+            {formatDate(currentDate)}
+          </h2>
+          
+          <button
+            onClick={goToNextMonth}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            Next Month →
+          </button>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-1 mb-4">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-gray-400 font-medium py-2">
+                {day}
+              </div>
+            ))}
           </div>
 
-          {/* Calendar Grid */}
-          <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-            {/* Day Headers */}
-            <div className="grid grid-cols-7 bg-gray-50 border-b-2 border-gray-200">
-              {Array.from({ length: 7 }).map((_, index) => (
-                <div key={index} className="p-4 text-center border-r border-gray-200 last:border-r-0">
-                  <div className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-                    {getDayName(index).slice(0, 3)}
-                  </div>
+          {/* Calendar Days */}
+          <div className="grid grid-cols-7 gap-1">
+            {calendarDays.map((day, index) => (
+              <div
+                key={index}
+                className={`
+                  min-h-[120px] p-2 border border-gray-700 rounded-lg
+                  ${day.isCurrentMonth ? 'bg-gray-800' : 'bg-gray-900 text-gray-600'}
+                  ${day.isToday ? 'ring-2 ring-red-500' : ''}
+                  ${day.itineraries.length > 0 ? 'bg-red-900/20 border-red-500/50' : ''}
+                `}
+              >
+                {/* Day Number */}
+                <div className={`
+                  text-sm font-medium mb-2
+                  ${day.isCurrentMonth ? 'text-white' : 'text-gray-600'}
+                  ${day.isToday ? 'text-red-400 font-bold' : ''}
+                `}>
+                  {formatDay(day.date)}
                 </div>
-              ))}
-            </div>
 
-            {/* Calendar Days Grid */}
-            <div className="grid grid-cols-7">
-              {calendarDays.map((day, index) => (
-                <div
-                  key={index}
-                  className={`min-h-[120px] p-3 border-r border-b border-gray-200 last:border-r-0 relative ${
-                    day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                  } ${day.isToday ? 'bg-blue-50 ring-2 ring-blue-500' : ''}`}
-                >
-                  {/* Date Number */}
-                  <div className={`text-lg font-semibold mb-2 ${
-                    day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                  } ${day.isToday ? 'text-blue-600' : ''}`}>
-                    {day.date.getDate()}
+                {/* Itineraries for this day */}
+                {day.itineraries.map((itinerary, idx) => (
+                  <div
+                    key={idx}
+                    className="mb-1 p-1 bg-red-600/80 text-white text-xs rounded cursor-pointer hover:bg-red-500/80 transition-colors"
+                    title={`${itinerary.title} - ${itinerary.description}`}
+                  >
+                    <div className="font-medium truncate">{itinerary.title}</div>
+                    <div className="text-red-200 truncate">{itinerary.description}</div>
                   </div>
-                  
-                  {/* Trip Indicators */}
-                  {day.hasTrip && day.tripDetails && (
-                    <div className="space-y-2">
-                      {day.tripDetails.slice(0, 3).map((trip, tripIndex) => (
-                        <div
-                          key={tripIndex}
-                          className={`text-xs p-2 rounded-lg border ${
-                            trip.status === 'planned' 
-                              ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                              : 'bg-green-50 text-green-700 border-green-200'
-                          }`}
-                          title={`${trip.title} - ${trip.destination}`}
-                        >
-                          <div className="font-medium truncate">{trip.title}</div>
-                          <div className="text-xs opacity-75 truncate">{trip.destination}</div>
-                        </div>
-                      ))}
-                      {day.tripDetails.length > 3 && (
-                        <div className="text-xs text-gray-500 text-center bg-gray-100 rounded px-2 py-1">
-                          +{day.tripDetails.length - 3} more
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Legend */}
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Legend</h3>
-          <div className="flex flex-wrap items-center space-x-8">
+        <div className="mt-8 bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Calendar Legend</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-blue-50 border-2 border-blue-200 rounded-lg"></div>
-              <span className="text-sm text-gray-700 font-medium">Planned Trips</span>
+              <div className="w-4 h-4 bg-red-600/80 rounded"></div>
+              <span className="text-gray-300">Trip Day</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-green-50 border-2 border-green-200 rounded-lg"></div>
-              <span className="text-sm text-gray-700 font-medium">Completed Trips</span>
+              <div className="w-4 h-4 bg-transparent border-2 border-red-500 rounded"></div>
+              <span className="text-gray-300">Today</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-blue-50 ring-2 ring-blue-500 rounded-lg"></div>
-              <span className="text-sm text-gray-700 font-medium">Today</span>
+              <div className="w-4 h-4 bg-gray-800 rounded"></div>
+              <span className="text-gray-300">Current Month</span>
             </div>
           </div>
         </div>
@@ -265,3 +245,4 @@ export default function CalendarPage() {
     </div>
   );
 }
+
