@@ -3,47 +3,68 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type ActionResult = { success: false; message: string } | null;
+export type ActionResult = { success: false; message: string } | { success: true; redirect?: string } | null;
 
 export async function loginAction(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const email = String(formData.get("email") || "").trim();
-  const password = String(formData.get("password") || "");
-  const supabase = createSupabaseServerClient();
+  const password = String(formData.get("password") || "").trim();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    return { success: false, message: error.message };
+  if (!email || !password) {
+    return { success: false, message: "Email and password are required" };
   }
-  redirect("/dashboard");
-  return null;
+
+  try {
+    const supabase = createSupabaseServerClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
+
+    return { success: true, redirect: "/dashboard" };
+  } catch (error) {
+    return { success: false, message: "An unexpected error occurred" };
+  }
 }
 
 export async function signupAction(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const email = String(formData.get("email") || "").trim();
-  const password = String(formData.get("password") || "");
-  const name = String(formData.get("name") || "").trim();
-  const supabase = createSupabaseServerClient();
+  const password = String(formData.get("password") || "").trim();
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { name },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    return { success: false, message: error.message };
+  if (!email || !password) {
+    return { success: false, message: "Email and password are required" };
   }
 
-  // If email confirmation is enabled, session may be null. Redirect to a friendly page.
-  redirect("/dashboard");
-  return null;
+  if (password.length < 6) {
+    return { success: false, message: "Password must be at least 6 characters" };
+  }
+
+  try {
+    const supabase = createSupabaseServerClient();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
+
+    return { success: true, redirect: "/dashboard" };
+  } catch (error) {
+    return { success: false, message: "An unexpected error occurred" };
+  }
 }
 
-export async function signOutAction() {
-  const supabase = createSupabaseServerClient();
-  await supabase.auth.signOut();
-  redirect("/login");
+export async function logoutAction(): Promise<ActionResult> {
+  try {
+    const supabase = createSupabaseServerClient();
+    await supabase.auth.signOut();
+    redirect("/login");
+  } catch (error) {
+    return { success: false, message: "Failed to sign out" };
+  }
 }

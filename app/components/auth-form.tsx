@@ -1,105 +1,179 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useActionState } from "react";
-import { loginAction, signupAction, type ActionResult } from "../(auth)/actions";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { loginAction, signupAction } from "@/app/(auth)/actions";
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
-const signupSchema = loginSchema.extend({
-  name: z.string().min(2),
-});
-
-type Props = { mode: "login" | "signup" };
-
-type LoginValues = z.infer<typeof loginSchema>;
-type SignupValues = z.infer<typeof signupSchema>;
+interface Props {
+  mode: "login" | "signup";
+}
 
 function LoginForm() {
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
-    (s, fd) => loginAction(s, fd),
-    null
-  );
-  const form = useForm<LoginValues>({ 
-    resolver: zodResolver(loginSchema), 
-    defaultValues: { email: "", password: "" } 
-  });
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createSupabaseClient();
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const email = String(formData.get("email") || "").trim();
+      const password = String(formData.get("password") || "").trim();
+
+      if (!email || !password) {
+        setError("Email and password are required");
+        return;
+      }
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      if (data.user) {
+        console.log('User signed in:', data.user.email);
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <form action={formAction} className="space-y-6">
-      <div className="space-y-2">
-        <input 
-          type="email" 
-          className="w-full rounded-xl bg-gray-800 border border-gray-700 px-6 py-4 text-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:bg-gray-900 transition-all" 
-          placeholder="Email" 
-          {...form.register("email")} 
+    <form action={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-white">
+          Email
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500"
+          placeholder="Enter your email"
         />
-        <p className="text-xs text-red-400">{form.formState.errors.email?.message}</p>
       </div>
-      <div className="space-y-2">
-        <input 
-          type="password" 
-          className="w-full rounded-xl bg-gray-800 border border-gray-700 px-6 py-4 text-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:bg-gray-900 transition-all" 
-          placeholder="Password" 
-          {...form.register("password")} 
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-white">
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500"
+          placeholder="Enter your password"
         />
-        <p className="text-xs text-red-400">{form.formState.errors.password?.message}</p>
       </div>
-      {state?.success === false && <div className="text-sm text-red-400">{state.message}</div>}
-      
-      <div className="pt-8">
-        <button 
-          type="submit" 
-          disabled={pending} 
-          className="w-16 h-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
-        >
-          {pending ? (
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          )}
-        </button>
-      </div>
+      {error && (
+        <div className="text-red-400 text-sm">{error}</div>
+      )}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading ? "Signing In..." : "Sign In"}
+      </button>
     </form>
   );
 }
 
 function SignupForm() {
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
-    (s, fd) => signupAction(s, fd),
-    null
-  );
-  const form = useForm<SignupValues>({ 
-    resolver: zodResolver(signupSchema), 
-    defaultValues: { name: "", email: "", password: "" } 
-  });
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createSupabaseClient();
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const email = String(formData.get("email") || "").trim();
+      const password = String(formData.get("password") || "").trim();
+
+      if (!email || !password) {
+        setError("Email and password are required");
+        return;
+      }
+
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters");
+        return;
+      }
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      if (data.user) {
+        console.log('User signed up:', data.user.email);
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <form action={formAction} className="space-y-4">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-white">Name</label>
-        <input type="text" className="w-full rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="Your name" {...form.register("name")} />
-        <p className="text-xs text-red-400">{form.formState.errors.name?.message}</p>
+    <form action={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-white">
+          Email
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500"
+          placeholder="Enter your email"
+        />
       </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-white">Email</label>
-        <input type="email" className="w-full rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="you@example.com" {...form.register("email")} />
-        <p className="text-xs text-red-400">{form.formState.errors.email?.message}</p>
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-white">
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500"
+          placeholder="Enter your password"
+        />
       </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-white">Password</label>
-        <input type="password" className="w-full rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="••••••••" {...form.register("password")} />
-        <p className="text-xs text-red-400">{form.formState.errors.password?.message}</p>
-      </div>
-      {state?.success === false && <div className="text-sm text-red-400">{state.message}</div>}
-      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 hover:bg-red-700 px-4 text-white disabled:opacity-50">{pending ? "Please wait..." : "Sign up"}</button>
+      {error && (
+        <div className="text-red-400 text-sm">{error}</div>
+      )}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading ? "Signing Up..." : "Sign Up"}
+      </button>
     </form>
   );
 }
